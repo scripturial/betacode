@@ -1,0 +1,13 @@
+[package]
+name = "betacode2"
+version = "0.1.0"
+edition = "2021"
+description = "A fast rust and strict library for conversion to and from betacode."
+authors = ["Jay Rhoden <hello@scripturial.com"]
+license = "MIT"
+repository = "https://github.com/scripturial/betacode"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
