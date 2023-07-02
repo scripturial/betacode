@@ -17,6 +17,10 @@
 //! assert_eq!(word, "Θεός");
 //! ```
 //!
+//! The default converter assumes lowercase ascii letters are lowercase Greek
+//! letters and uppercase ascii letters are uppercase Greek letters. The TLG
+//! converter assumes all letters are always lowercase unless an asterix appears
+//! before the letter.
 
 use std::slice;
 
@@ -59,6 +63,10 @@ pub enum ConversionError {
 /// assert_eq!(word, "θεός");
 /// ```
 ///
+/// The default converter assumes lowercase ascii letters are lowercase Greek
+/// letters and uppercase ascii letters are uppercase Greek letters. The TLG
+/// converter assumes all letters are always lowercase unless an asterix appears
+/// before the letter.
 pub fn to_greek(input: &str, version: Type) -> Result<String, ConversionError> {
     let mut word: String = String::new();
 
