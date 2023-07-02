@@ -6,22 +6,22 @@
 //! Convert Robinson-Pierpont style betacode into unicode Greek:
 //!
 //! ```
-//! let word = betacode2::to_greek("qeo/v", betacode2::Type::Default).unwrap();
-//! assert_eq!(word, "θεός");
+//! let word = betacode2::to_greek("Qeo/v", betacode2::Type::Default).unwrap();
+//! assert_eq!(word, "Θεός");
 //! ```
 //!
 //! Convert TLG style betacode into unicode Greek:
 //!
 //! ```
-//! let word = betacode2::to_greek("qeo/s", betacode2::Type::TLG).unwrap();
-//! assert_eq!(word, "θεός");
+//! let word = betacode2::to_greek("*QEO/S", betacode2::Type::TLG).unwrap();
+//! assert_eq!(word, "Θεός");
 //! ```
 //!
 
 use std::slice;
 
 /// Choose which betacode format to convert.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Type {
     Default = 0,
     TLG = 1,
@@ -101,21 +101,37 @@ pub fn to_greek(input: &str, version: Type) -> Result<String, ConversionError> {
         let mut current: char = 0 as char;
         let mut current_index: usize = 0;
         let mut accents: u16 = 0;
+        let mut uppercase: bool = false;
 
         loop {
             if i == size {
                 break;
             }
-            let c = text[i];
+            let mut c = text[i];
             if c == b'*' {
-                // For now ignore asterix before letter
-                i += 1;
-                continue;
+                if version == Type::TLG {
+                    uppercase = true;
+                    i += 1;
+                    continue;
+                }
+                return Err(ConversionError::UnexpectedCharacter(c as char, i));
             }
             if c > 127 {
                 // Unicode sequences should not appear
                 // in ascii betacode sequences
                 return Err(ConversionError::UnexpectedCharacter(c as char, i));
+            }
+            if version == Type::TLG {
+                if uppercase == true {
+                    if c >= b'a' && c <= b'z' {
+                        c -= b'a' - b'A'
+                    }
+                    uppercase = false
+                } else {
+                    if c >= b'A' && c <= b'Z' {
+                        c += b'a' - b'A'
+                    }
+                }
             }
             let l = lookup_greek_letter(c, version);
             if l != 0 as char {
@@ -507,8 +523,7 @@ mod tests {
 
     #[test]
     fn valid_default_encoding() {
-
-    assert_eq!(to_greek("", Type::Default).unwrap(), "");
+        assert_eq!(to_greek("", Type::Default).unwrap(), "");
         assert_eq!(to_greek(" ", Type::Default).unwrap(), "");
         assert_eq!(to_greek("  ", Type::Default).unwrap(), "");
         assert_eq!(to_greek("a", Type::Default).unwrap(), "α");
@@ -526,7 +541,7 @@ mod tests {
         assert_eq!(to_greek("kai\\ ", Type::Default).unwrap(), "καὶ");
         assert_eq!(to_greek("cri", Type::Default).unwrap(), "χρι");
         assert_eq!(to_greek("criv", Type::Default).unwrap(), "χρις");
-        assert_eq!(to_greek("qeo/v", Type::Default).unwrap(), "θεός");
+        assert_eq!(to_greek("Qeo/v", Type::Default).unwrap(), "Θεός");
         assert_eq!(to_greek("qeo/s3", Type::Default).unwrap(), "θεόϲ");
     }
 
@@ -540,20 +555,24 @@ mod tests {
         assert!(to_greek("(a", Type::Default).is_err());
         assert!(to_greek("\\a", Type::Default).is_err());
         assert!(to_greek("xri", Type::Default).is_err());
+        assert!(to_greek("*a", Type::Default).is_err());
     }
 
     #[test]
     fn valid_tlg_encoding() {
-        assert_eq!(to_greek("qeo/s", Type::TLG).unwrap(), "θεός");
+        assert_eq!(to_greek("*qeo/s", Type::TLG).unwrap(), "Θεός");
+        assert_eq!(to_greek("*QEO/S", Type::TLG).unwrap(), "Θεός");
         assert_eq!(to_greek("xri", Type::TLG).unwrap(), "χρι");
+        assert_eq!(to_greek("XRI", Type::TLG).unwrap(), "χρι");
+        assert_eq!(to_greek("*XRI", Type::TLG).unwrap(), "Χρι");
         assert_eq!(to_greek("qeo/s1", Type::TLG).unwrap(), "θεόσ");
         assert_eq!(to_greek("qeo/s2", Type::TLG).unwrap(), "θεός");
         assert_eq!(to_greek("qeo/s3", Type::TLG).unwrap(), "θεόϲ");
     }
-}
 
-#[test]
-fn invalid_tlg_encoding() {
-    assert!(to_greek("a\\b'a", Type::TLG).is_err());
-    assert!(to_greek("dε", Type::TLG).is_err());
+    #[test]
+    fn invalid_tlg_encoding() {
+        assert!(to_greek("a\\b'a", Type::TLG).is_err());
+        assert!(to_greek("dε", Type::TLG).is_err());
+    }
 }
