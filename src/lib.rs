@@ -1,20 +1,20 @@
-//! A fast rust and strict library for conversion to and from betacode.
-//! Includes support for TLG betacode, and standard betacode.
+//! A fast rust library for conversion to and from betacode.
+//! Includes support for standard and TLG betacode.
 //!
 //! # Examples
 //!
 //! Convert Robinson-Pierpont style betacode into unicode Greek:
 //!
 //! ```
-//! let result = betacode2::to_greek("qeo/v", betacode2::Type::Default).unwrap();
-//! assert_eq!(result, "θεός");
+//! let word = betacode2::to_greek("qeo/v", betacode2::Type::Default).unwrap();
+//! assert_eq!(word, "θεός");
 //! ```
 //!
 //! Convert TLG style betacode into unicode Greek:
 //!
 //! ```
-//! let result = betacode2::to_greek("qeo/s", betacode2::Type::TLG).unwrap();
-//! assert_eq!(result, "θεός");
+//! let word = betacode2::to_greek("qeo/s", betacode2::Type::TLG).unwrap();
+//! assert_eq!(word, "θεός");
 //! ```
 //!
 
@@ -48,15 +48,15 @@ pub enum ConversionError {
 /// Convert Robinson-Pierpont style betacode into unicode Greek:
 ///
 /// ```
-/// let result = betacode2::to_greek("qeo/v", betacode2::Type::Default).unwrap();
-/// assert_eq!(result, "θεός");
+/// let word = betacode2::to_greek("qeo/v", betacode2::Type::Default).unwrap();
+/// assert_eq!(word, "θεός");
 /// ```
 ///
 /// Convert TLG style betacode into unicode Greek:
 ///
 /// ```
-/// let result = betacode2::to_greek("qeo/s", betacode2::Type::TLG).unwrap();
-/// assert_eq!(result, "θεός");
+/// let word = betacode2::to_greek("qeo/s", betacode2::Type::TLG).unwrap();
+/// assert_eq!(word, "θεός");
 /// ```
 ///
 pub fn to_greek(input: &str, version: Type) -> Result<String, ConversionError> {
