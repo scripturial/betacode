@@ -6,16 +6,21 @@
 //! Convert Robinson-Pierpont style betacode into unicode Greek:
 //!
 //! ```
-//! let word = betacode2::to_greek("Qeo/v", betacode2::Type::Default).unwrap();
+//! use betacode2::{Betacode, Type::Default};
+//!
+//! let word = "Qeo/v".to_greek(Default).unwrap();
 //! assert_eq!(word, "Θεός");
 //! ```
 //!
 //! Convert TLG style betacode into unicode Greek:
 //!
 //! ```
-//! let word = betacode2::to_greek("*QEO/S", betacode2::Type::TLG).unwrap();
+//! use betacode2::{Betacode, Type::TLG};
+//!
+//! let word = "*QEO/S".to_greek(TLG).unwrap();
 //! assert_eq!(word, "Θεός");
 //! ```
+//!
 //!
 //! The default converter assumes lowercase ascii letters are lowercase Greek
 //! letters and uppercase ascii letters are uppercase Greek letters. The TLG
@@ -37,6 +42,22 @@ pub enum ConversionError {
     /// Returns the character that has an invalid accent, and its position
     /// in the string.
     UnexpectedAccent(char, usize),
+}
+
+pub trait Betacode {
+    fn to_greek(&self, t: Type) -> Result<String, ConversionError>;
+}
+
+impl Betacode for String {
+    fn to_greek(&self, t: Type) -> Result<String, ConversionError> {
+        to_greek(&self, t)
+    }
+}
+
+impl Betacode for &str {
+    fn to_greek(&self, t: Type) -> Result<String, ConversionError> {
+        to_greek(&self, t)
+    }
 }
 
 /// Convert a betacode ascii string into a Greek unicode string.
@@ -523,6 +544,15 @@ fn apply_accent(c: char, accents: u16) -> char {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_traits() {
+        use crate::Betacode;
+        assert_eq!("".to_greek(Type::Default).unwrap(), "");
+        assert_eq!(" ab ".to_greek(Type::Default).unwrap(), "αβ");
+        assert_eq!(String::from("").to_greek(Type::Default).unwrap(), "");
+        assert_eq!(String::from("sa").to_greek(Type::Default).unwrap(), "σα");
+    }
 
     #[test]
     fn valid_default_encoding() {
