@@ -1,6 +1,6 @@
 [package]
 name = "betacode2"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "A fast rust library for conversion to and from betacode."
 authors = ["Jay Rhoden <hello@scripturial.com"]

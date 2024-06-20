@@ -22,8 +22,6 @@
 //! converter assumes all letters are always lowercase unless an asterix appears
 //! before the letter.
 
-use std::slice;
-
 /// Choose which betacode format to convert.
 #[derive(Copy, Clone, PartialEq)]
 pub enum Type {
@@ -70,161 +68,157 @@ pub enum ConversionError {
 pub fn to_greek(input: &str, version: Type) -> Result<String, ConversionError> {
     let mut word: String = String::new();
 
-    unsafe {
-        let mut i: usize = 0;
-        let mut size: usize = input.len();
-        if size == 0 {
+    let text = input.as_bytes();
+    let mut i: usize = 0;
+    let mut size: usize = input.len();
+
+    if size == 0 {
+        return Ok("".to_string());
+    }
+
+    // Trim whitespace from start
+    loop {
+        if i == size {
             return Ok("".to_string());
         }
-
-        // Walk over the u8 bytes inside the str instead of
-        // copying the data into a u8 array.
-        let ptr = input.as_ptr();
-        let text = slice::from_raw_parts(ptr, size);
-
-        // Trim whitespace off start
-        loop {
-            if i == size {
-                return Ok("".to_string());
-            }
-            if !is_ascii_whitespace(text[i]) {
-                break;
-            }
-            i += 1;
+        if !is_ascii_whitespace(text[i]) {
+            break;
         }
+        i += 1;
+    }
 
-        // Ignore whitespace at the end
-        loop {
-            if i == size {
-                return Ok("".to_string());
-            }
-            if !is_ascii_whitespace(text[size - 1]) {
-                break;
-            }
-            size -= 1;
-            continue;
+    // Trim whitespace from end
+    loop {
+        if i == size {
+            return Ok("".to_string());
         }
+        if !is_ascii_whitespace(text[size - 1]) {
+            break;
+        }
+        size -= 1;
+        continue;
+    }
 
-        // Read a character and any accents following it
-        let mut current: char = 0 as char;
-        let mut current_index: usize = 0;
-        let mut accents: u16 = 0;
-        let mut uppercase: bool = false;
+    // Read a character and any accents following it
+    let mut current: char = 0 as char;
+    let mut current_index: usize = 0;
+    let mut accents: u16 = 0;
+    let mut uppercase: bool = false;
 
-        loop {
-            if i == size {
-                break;
-            }
-            let mut c = text[i];
-            if c == b'*' {
-                if version == Type::TLG {
-                    uppercase = true;
-                    i += 1;
-                    continue;
-                }
-                return Err(ConversionError::UnexpectedCharacter(c as char, i));
-            }
-            if c > 127 {
-                // Unicode sequences should not appear
-                // in ascii betacode sequences
-                return Err(ConversionError::UnexpectedCharacter(c as char, i));
-            }
+    loop {
+        if i == size {
+            break;
+        }
+        let mut c = text[i];
+        if c == b'*' {
             if version == Type::TLG {
-                if uppercase == true {
-                    if c >= b'a' && c <= b'z' {
-                        c -= b'a' - b'A'
-                    }
-                    uppercase = false
-                } else {
-                    if c >= b'A' && c <= b'Z' {
-                        c += b'a' - b'A'
-                    }
-                }
-            }
-            let l = lookup_greek_letter(c, version);
-            if l != 0 as char {
-                if current != 0 as char {
-                    // We encountered the next letter, if we just read a previous
-                    // letter, push it onto the return string.
-                    let e = apply_accent(current, accents);
-                    if e > 0 as char {
-                        word.push(e)
-                    } else {
-                        return Err(ConversionError::UnexpectedAccent(
-                            current as char,
-                            current_index,
-                        ));
-                    }
-                }
-                // The start of a letter sequence
-                current = l;
-                current_index = i;
-                accents = 0;
+                uppercase = true;
                 i += 1;
                 continue;
             }
-            if is_ascii_whitespace(c) {
-                break;
+            return Err(ConversionError::UnexpectedCharacter(c as char, i));
+        }
+        if c > 127 {
+            // Unicode sequences should not appear
+            // in ascii betacode sequences
+            return Err(ConversionError::UnexpectedCharacter(c as char, i));
+        }
+        if version == Type::TLG {
+            if uppercase == true {
+                if c >= b'a' && c <= b'z' {
+                    c -= b'a' - b'A'
+                }
+                uppercase = false
+            } else {
+                if c >= b'A' && c <= b'Z' {
+                    c += b'a' - b'A'
+                }
             }
-            let valid = is_valid_betacode_symbol(c);
-            if valid > 0 {
-                if current == 0 as char {
-                    // We see a betacode accent character, but
-                    // not a greek letter just before it.
-                    return Err(ConversionError::UnexpectedCharacter(
-                        c as char,
+        }
+        let l = lookup_greek_letter(c, version);
+        if l != 0 as char {
+            if current != 0 as char {
+                // We encountered the next letter, if we just read a previous
+                // letter, push it onto the return string.
+                let e = apply_accent(current, accents);
+                if e > 0 as char {
+                    word.push(e)
+                } else {
+                    return Err(ConversionError::UnexpectedAccent(
+                        current as char,
                         current_index,
                     ));
                 }
-                accents = accents | valid;
-                i += 1;
-                continue;
             }
-            // This character is not an alphabetic letter, not a
-            // whitespace, and not a valid betacode symbol.
+            // The start of a letter sequence
+            current = l;
+            current_index = i;
+            accents = 0;
+            i += 1;
+            continue;
+        }
+        if is_ascii_whitespace(c) {
             break;
         }
-
-        // When the end of string is reached, a final character
-        // may be waiting to be pushed onto the result string.
-        if current != 0 as char {
-            println!("apply accent {} {} {}", word, current, accents);
-            let e = apply_accent(current, accents);
-            if accents == 0 && current == 'σ' {
-                word.push('ς')
-            } else if e > 0 as char {
-                word.push(e)
-            } else {
-                return Err(ConversionError::UnexpectedAccent(
-                    current as char,
+        let valid = is_valid_betacode_symbol(c);
+        if valid > 0 {
+            if current == 0 as char {
+                // We see a betacode accent character, but
+                // not a greek letter just before it.
+                return Err(ConversionError::UnexpectedCharacter(
+                    c as char,
                     current_index,
                 ));
             }
+            accents = accents | valid;
+            i += 1;
+            continue;
         }
+        // This character is not an alphabetic letter, not a
+        // whitespace, and not a valid betacode symbol.
+        break;
+    }
 
-        if i < size && text[i] == b'\'' {
-            word.push('᾽');
-            i += 1
-        }
-
-        loop {
-            if i == size {
-                break;
-            }
-            if is_ascii_whitespace(text[i]) {
-                i += 1;
-                continue;
-            }
-            // Unexpected character
-            return Err(ConversionError::UnexpectedCharacter(current as char, i));
+    // When the end of string is reached, a final character
+    // may be waiting to be pushed onto the result string.
+    if current != 0 as char {
+        let e = apply_accent(current, accents);
+        if accents == 0 && current == 'σ' {
+            word.push('ς')
+        } else if e > 0 as char {
+            word.push(e)
+        } else {
+            return Err(ConversionError::UnexpectedAccent(
+                current as char,
+                current_index,
+            ));
         }
     }
+
+    if i < size && text[i] == b'\'' {
+        word.push('᾽');
+        i += 1
+    }
+
+    loop {
+        if i == size {
+            break;
+        }
+        if is_ascii_whitespace(text[i]) {
+            i += 1;
+            continue;
+        }
+        // Unexpected character
+        return Err(ConversionError::UnexpectedCharacter(current as char, i));
+    }
+
     Ok(word)
 }
 
-// test if a character is a valid accentuation for a greek character.
+// test if a character is a valid accentuation for a Greek character.
 //
 // See: https://stephanus.tlg.uci.edu/encoding/BCM.pdf
+#[inline]
 fn is_valid_betacode_symbol(c: u8) -> u16 {
     match c {
         b'/' => ASCII_ACUTE,
@@ -262,6 +256,7 @@ const ASCII_CIRCUMFLEX_SMOOTH: u16 = ASCII_SMOOTH + ASCII_CIRCUMFLEX;
 const ASCII_DIAERESIS_ACUTE: u16 = ASCII_DIAERESIS + ASCII_ACUTE;
 const ASCII_DIAERESIS_GRAVE: u16 = ASCII_DIAERESIS + ASCII_GRAVE;
 
+#[inline]
 fn is_ascii_whitespace(c: u8) -> bool {
     if c == b' ' || c == b'\r' || c == b'\n' || c == b'\t' || c == 0 {
         return true;
