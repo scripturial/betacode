@@ -285,6 +285,7 @@ fn is_ascii_whitespace(c: u8) -> bool {
     return false;
 }
 
+#[inline]
 fn lookup_greek_letter(c: u8, version: Type) -> char {
     let o = match c {
         b'a' => 'α',
@@ -371,6 +372,7 @@ fn lookup_greek_letter(c: u8, version: Type) -> char {
     0 as char
 }
 
+#[inline]
 fn apply_accent(c: char, accents: u16) -> char {
     if accents == 0 {
         return c;
