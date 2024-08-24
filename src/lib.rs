@@ -323,6 +323,7 @@ fn lookup_greek_letter(c: u8, version: Type) -> char {
         b'M' => 'Μ',
         b'N' => 'Ν',
         b'O' => 'Ο',
+        b'P' => 'Π',
         b'Q' => 'Θ',
         b'R' => 'Ρ',
         b'S' => 'Σ',
@@ -578,6 +579,9 @@ mod tests {
         assert_eq!(to_greek("criv", Type::Default).unwrap(), "χρις");
         assert_eq!(to_greek("Qeo/v", Type::Default).unwrap(), "Θεός");
         assert_eq!(to_greek("qeo/s3", Type::Default).unwrap(), "θεόϲ");
+        assert_eq!(to_greek("u(mw^n", Type::Default).unwrap(), "ὑμῶν");
+        assert_eq!(to_greek("U(mw^n", Type::Default).unwrap(), "Ὑμῶν");
+        assert_eq!(to_greek("Pau^los", Type::Default).unwrap(), "Παῦλος");
     }
 
     #[test]
