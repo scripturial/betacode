@@ -157,6 +157,21 @@ pub fn to_greek(input: &str, version: Type) -> Result<String, ConversionError> {
             }
         }
         let l = lookup_greek_letter(c, version);
+        if l != 0 as char && current == 0 as char && accents != 0 {
+            let e = apply_accent(l, accents);
+            if e > 0 as char {
+                word.push(e)
+            } else {
+                return Err(ConversionError::UnexpectedAccent(
+                    current as char,
+                    current_index,
+                ));
+            }
+            current_index = i;
+            accents = 0;
+            i += 1;
+            continue;
+        }
         if l != 0 as char {
             if current != 0 as char {
                 // We encountered the next letter, if we just read a previous
@@ -587,6 +602,12 @@ mod tests {
         assert_eq!(to_greek("u(mw^n", Type::Default).unwrap(), "ὑμῶν");
         assert_eq!(to_greek("U(mw^n", Type::Default).unwrap(), "Ὑμῶν");
         assert_eq!(to_greek("Pau^los", Type::Default).unwrap(), "Παῦλος");
+        assert_eq!(to_greek("klhto/s", Type::Default).unwrap(), "κλητός");
+        assert_eq!(to_greek("klhto\\s", Type::Default).unwrap(), "κλητὸς");
+        assert_eq!(to_greek(")Ihsou^", Type::Default).unwrap(), "Ἰησοῦ");
+        assert_eq!(to_greek(")a", Type::Default).unwrap(), "ἀ");
+        assert_eq!(to_greek("(a", Type::Default).unwrap(), "ἁ");
+        assert_eq!(to_greek("\\a", Type::Default).unwrap(), "ὰ");
     }
 
     #[test]
@@ -595,9 +616,6 @@ mod tests {
         assert!(to_greek("dε", Type::Default).is_err());
         assert!(to_greek("dε ", Type::Default).is_err());
         assert!(to_greek(" dε", Type::Default).is_err());
-        assert!(to_greek(")a", Type::Default).is_err());
-        assert!(to_greek("(a", Type::Default).is_err());
-        assert!(to_greek("\\a", Type::Default).is_err());
         assert!(to_greek("xri", Type::Default).is_err());
         assert!(to_greek("*a", Type::Default).is_err());
     }
