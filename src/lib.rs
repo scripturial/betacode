@@ -328,6 +328,7 @@ fn lookup_greek_letter(c: u8, version: Type) -> char {
         b't' => 'τ',
         b'u' => 'υ',
         b'w' => 'ω',
+        b'x' => 'χ',
         b'y' => 'ψ',
         b'z' => 'ζ',
         b'A' => 'α',
@@ -350,6 +351,7 @@ fn lookup_greek_letter(c: u8, version: Type) -> char {
         b'T' => 'Τ',
         b'U' => 'Υ',
         b'W' => 'Ω',
+        b'X' => 'Χ',
         b'Y' => 'Ψ',
         b'Z' => 'Ζ',
         _ => 0 as char,
@@ -608,6 +610,7 @@ mod tests {
         assert_eq!(to_greek(")a", Type::Default).unwrap(), "ἀ");
         assert_eq!(to_greek("(a", Type::Default).unwrap(), "ἁ");
         assert_eq!(to_greek("\\a", Type::Default).unwrap(), "ὰ");
+        assert_eq!(to_greek("xristou^", Type::Default).unwrap(), "χριστοῦ");
     }
 
     #[test]
@@ -616,7 +619,6 @@ mod tests {
         assert!(to_greek("dε", Type::Default).is_err());
         assert!(to_greek("dε ", Type::Default).is_err());
         assert!(to_greek(" dε", Type::Default).is_err());
-        assert!(to_greek("xri", Type::Default).is_err());
         assert!(to_greek("*a", Type::Default).is_err());
     }
 
